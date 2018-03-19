@@ -1,0 +1,15 @@
+<config>
+    <sheets>
+        <sheet input="D:/falsemen/repo/doc/data/Newdata_Items.xlsx"/>
+        <sheet input="D:/falsemen/repo/doc/data/Newdata_Skills.xlsx"/>
+        <sheet input="D:/falsemen/repo/doc/data/Newdata_Weapons.xlsx"/>
+        <sheet input="D:/falsemen/repo/doc/data/Newdata_Armors.xlsx"/>
+        <sheet input="D:/falsemen/repo/doc/data/Newdata_Enemies.xlsx"/>
+        <sheet input="D:/falsemen/repo/doc/data/Newdata_Traders.xlsx"/>
+    </sheets>
+    <properties>
+        <!-- 项目 -->
+        <property name="ProjectDirPath" value="D:/falsemen/repo"/>
+        <property name="JsonFileOutputPathTemplate" value="D:/falsemen/repo/data/{0}.json"/>
+    </properties>
+</config>

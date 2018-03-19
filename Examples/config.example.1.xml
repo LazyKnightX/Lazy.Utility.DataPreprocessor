@@ -1,0 +1,10 @@
+<config>
+    <sheets>
+        <sheet name="游戏数据" input="D:/Hero/repo/Data/游戏数据.xlsx"/>
+    </sheets>
+    <properties>
+        <!-- 项目 -->
+        <property name="AssetDirPath" value="D:/Hero/repo/Project/Assets"/>
+        <property name="JsonFileOutputPathTemplate" value="D:/Hero/repo/Project/Assets/Data/{0}.json"/>
+    </properties>
+</config>
