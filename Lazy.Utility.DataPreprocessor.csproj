@@ -49,9 +49,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core.cs" />
+    <Compile Include="Config.cs" />
+    <Compile Include="Dataset.cs" />
     <Compile Include="Data\RPGMakerMV.cs" />
+    <Compile Include="ExcelDataPreprocessor.cs" />
+    <Compile Include="ExcelUtility.cs" />
+    <Compile Include="Extends.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RenderedCell.cs" />
+    <Compile Include="RenderedRow.cs" />
+    <Compile Include="RenderedSheet.cs" />
+    <Compile Include="RenderedSheetDictionary.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Examples\config.example.1.xml" />
