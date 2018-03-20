@@ -23,6 +23,9 @@ namespace Lazy.Utility.DataPreprocessor
     protected static readonly ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
     protected string[] itemSeparators = {"\n", "、"};
 
+    private string _workingTable;
+    private string _workingSheet;
+
     public void Execute()
     {
       logger.Info("开始转表，肝肝肝肝肝肝!");
@@ -122,9 +125,10 @@ namespace Lazy.Utility.DataPreprocessor
     {
       if (!string.IsNullOrEmpty(value)) return;
       if (hint == null)
-        logger.Warn($"检测到空【{caption}】，忘了填写数据？");
+//        logger.Warn($"检测到空【{caption}】，忘了填写数据？ {new System.Diagnostics.StackTrace()}");
+        logger.Warn($"{_workingTable}:{_workingSheet} - 检测到空【{caption}】，忘了填写数据？");
       else
-        logger.Warn($"检测到空【{caption}】（{hint}），忘了填写数据？");
+        logger.Warn($"{_workingTable}:{_workingSheet} - 检测到空【{caption}】（{hint}），忘了填写数据？");
       Console.ReadKey();
     }
 
@@ -146,12 +150,12 @@ namespace Lazy.Utility.DataPreprocessor
     {
       if (dataset.ContainsKey(id))
       {
-        logger.Info("更新ID：" + id);
+        logger.Info($"{_workingTable}:{_workingSheet} 更新ID：{id}");
         dataset[id] = data;
       }
       else
       {
-        logger.Info("添加ID：" + id);
+        logger.Info($"{_workingTable}:{_workingSheet} 添加ID：{id}");
         dataset.Add(id, data);
       }
     }
@@ -167,7 +171,7 @@ namespace Lazy.Utility.DataPreprocessor
     {
       var list = pushEmpty ? new List<T> {default} : new List<T>();
       foreach (var data in dataset) list.Add(data.Value);
-      var output = JsonConvert.SerializeObject(list, Newtonsoft.Json.Formatting.Indented);
+      var output = JsonConvert.SerializeObject(list, Formatting.Indented);
       File.WriteAllText(GetJsonOutputPath(jsonFileName), output);
       logger.Info($"已成功输出：{jsonFileName}。");
     }
@@ -198,14 +202,12 @@ namespace Lazy.Utility.DataPreprocessor
       return null;
     }
 
-    protected void LoopRenderedSheet(RenderedSheet sheet, Action<int, RenderedRow> action)
-    {
-      sheet.ForEachRow(action);
-    }
-
     protected void LoopRenderedSheet(string tableName, string sheetName, Action<int, RenderedRow> action)
     {
-      LoopRenderedSheet(GetRenderedSheet(tableName, sheetName), action);
+      _workingTable = tableName;
+      _workingSheet = sheetName;
+
+      GetRenderedSheet(tableName, sheetName).ForEachRow(action);
     }
   }
 }
