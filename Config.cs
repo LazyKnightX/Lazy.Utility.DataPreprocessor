@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Xml;
 
 namespace Lazy.Utility.DataPreprocessor
@@ -48,11 +49,10 @@ namespace Lazy.Utility.DataPreprocessor
       {
         var attrs = node.Attributes;
         if (attrs == null) throw new NullReferenceException($"{path}中的sheet必须包含字段name和input。");
-        var name = attrs["name"];
-        if (attrs["name"] == null) throw new NullReferenceException($"{path}中的sheet必须包含字段name。");
         var input = attrs["input"];
         if (attrs["input"] == null) throw new NullReferenceException($"{path}中的sheet必须包含字段input。");
-        sheets.Add(name.InnerText, input.InnerText);
+        var name = Path.GetFileNameWithoutExtension(input.InnerText);
+        sheets.Add(name, input.InnerText);
       }
     }
 

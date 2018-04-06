@@ -7,7 +7,7 @@ namespace Lazy.Utility.DataPreprocessor
     /// <summary>
     /// excel text value
     /// </summary>
-    public string value;
+    public string text;
     /// <summary>
     /// excel background color (Foreground Pattern Color in SpreadsheetLight).
     /// </summary>
@@ -15,7 +15,7 @@ namespace Lazy.Utility.DataPreprocessor
 
     public static implicit operator string (RenderedCell cell)
     {
-      return cell.value;
+      return cell.text;
     }
   }
 }

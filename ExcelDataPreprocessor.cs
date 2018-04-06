@@ -61,10 +61,17 @@ namespace Lazy.Utility.DataPreprocessor
       {
         config = new Config(configPath);
       }
+      catch (NullReferenceException ex)
+      {
+        logger.Error($"在配置文件中发现错误，错误内容：{ex.Message}" );
+        Console.ReadKey();
+        throw;
+      }
       catch
       {
         logger.Error($"无法加载配置文件，本工具目录下的config.xml是否丢失了？\n路径：{Path.GetFullPath(configPath)}");
         Console.ReadKey();
+        throw new FileNotFoundException();
       }
     }
 
@@ -72,24 +79,27 @@ namespace Lazy.Utility.DataPreprocessor
     {
       try
       {
-        renderedSheets = ExcelUtility.RenderExcelSheets(config.sheets.Values.ToArray());
+        renderedSheets = ExcelUtility.RenderExcelSheets(config.sheets.Values);
       }
       catch (FileNotFoundException e)
       {
-        logger.Error("没有找到数据表文件， config.xml 中的数据表的路径配置正确了吗？", e);
+        logger.Error("没有找到数据表文件，config.xml 中的数据表的路径配置正确了吗？", e);
         Console.ReadKey();
+        throw;
       }
       catch (InvalidOperationException e)
       {
         // https://xywiki.com/p/System.Data.OleDb
         logger.Error("未安装 Microsoft Access Database Engine 或者需要安装64位的 Microsoft Access Database Engine 。", e);
         Console.ReadKey();
+        throw;
       }
-      catch (Exception e)
-      {
-        logger.Error("未知错误。", e);
-        Console.ReadKey();
-      }
+    }
+
+    protected float CompileFloat(string text)
+    {
+      ValidEmptyData("<小数格子>", text);
+      return Convert.ToSingle(text);
     }
 
     protected float CompilePercent(string text)
@@ -143,10 +153,10 @@ namespace Lazy.Utility.DataPreprocessor
 
     protected bool IsIgnoredCell(string value)
     {
-      return value == "/";
+      return value == "/" || value == "\\";
     }
 
-    protected void UpdateData<TData>(Dataset<TData> dataset, int id, TData data)
+    protected void UpdateData<TKey, TData>(Dictionary<TKey, TData> dataset, TKey id, TData data)
     {
       if (dataset.ContainsKey(id))
       {
@@ -167,11 +177,18 @@ namespace Lazy.Utility.DataPreprocessor
     /// <param name="dataset"></param>
     /// <param name="pushEmpty">rpg maker mv need first cell as empty.</param>
     /// <typeparam name="T"></typeparam>
-    protected void OutputJson<T>(string jsonFileName, Dataset<T> dataset, bool pushEmpty)
+    protected void OutputJsonArr<T>(string jsonFileName, ICollection<KeyValuePair<int, T>> dataset, bool pushEmpty)
     {
       var list = pushEmpty ? new List<T> {default} : new List<T>();
       foreach (var data in dataset) list.Add(data.Value);
       var output = JsonConvert.SerializeObject(list, Formatting.Indented);
+      File.WriteAllText(GetJsonOutputPath(jsonFileName), output);
+      logger.Info($"已成功输出：{jsonFileName}。");
+    }
+
+    protected void OutputJsonDic<T>(string jsonFileName, ICollection<KeyValuePair<string, T>> dataset)
+    {
+      var output = JsonConvert.SerializeObject(dataset, Formatting.Indented);
       File.WriteAllText(GetJsonOutputPath(jsonFileName), output);
       logger.Info($"已成功输出：{jsonFileName}。");
     }
@@ -181,15 +198,10 @@ namespace Lazy.Utility.DataPreprocessor
       return String.Format(config.properties["JsonFileOutputPathTemplate"], jsonFileName);
     }
 
-    /// <summary>
-    /// dataType: Item, Weapon, Armor, Skill, ...
-    /// sheetType: Normal, Feature, ...
-    /// * THEY ARE ALL DEFINED BY "config.xml".
-    /// </summary>
-    /// <param name="tableName"></param>
-    /// <param name="sheetName"></param>
+    /// <param name="tableName">表格文件名</param>
+    /// <param name="sheetName">表单名字</param>
     /// <returns></returns>
-    private RenderedSheet GetRenderedSheet(string tableName, string sheetName)
+    protected RenderedSheet GetRenderedSheet(string tableName, string sheetName)
     {
       try
       {
@@ -197,9 +209,26 @@ namespace Lazy.Utility.DataPreprocessor
       }
       catch (KeyNotFoundException ex)
       {
-        logger.Error($"没有找到表格 {tableName} 和 表单 {sheetName} ，是否忘记了注册需要被加载的表格的文件地址？", ex);
+        logger.Error($"没有找到表格 {tableName} 和 表单 {sheetName} ，是否忘记了注册需要被加载的表格的文件地址？或者是否忘记了填写表格的前缀“!”？", ex);
       }
       return null;
+    }
+
+    /// <param name="sheetName">表单名字，只能在设置了WorkingTable后使用</param>
+    /// <returns></returns>
+    protected RenderedSheet GetRenderedSheet(string sheetName)
+    {
+      return GetRenderedSheet(_workingTable, sheetName);
+    }
+
+    protected RenderedRow GetRenderedRow(int id)
+    {
+      return GetRenderedSheet(_workingTable, _workingSheet)[id];
+    }
+
+    protected RenderedRow GetRenderedRow(string sheetName, int id)
+    {
+      return GetRenderedSheet(sheetName)[id];
     }
 
     protected void LoopRenderedSheet(string tableName, string sheetName, Action<int, RenderedRow> action)
