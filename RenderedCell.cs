@@ -15,7 +15,7 @@ namespace Lazy.Utility.DataPreprocessor
 
     public static implicit operator string (RenderedCell cell)
     {
-      return cell.text;
+      return cell != null ? cell.text : "";
     }
   }
 }

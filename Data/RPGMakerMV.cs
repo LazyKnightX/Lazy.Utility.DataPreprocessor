@@ -530,7 +530,7 @@ namespace Lazy.Utility.DataPreprocessor.Data.RPGMakerMV
   public class TestBattler
   {
     public int actorId { get; set; }
-    public List<int> equips { get; set; }
+    public List<int?> equips { get; set; }
     public int level { get; set; }
   }
 

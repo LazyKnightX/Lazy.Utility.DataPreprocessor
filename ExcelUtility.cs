@@ -5,43 +5,50 @@ using System.IO;
 using System.Linq;
 using SpreadsheetLight;
 using System.Drawing;
+using System.Runtime.InteropServices;
+using log4net;
 
 namespace Lazy.Utility.DataPreprocessor
 {
   public static class ExcelUtility
   {
+    private static ILog logger => ExcelDataPreprocessor.logger;
     /// <summary>
     /// Access renderedSheet by renderedSheets[$"{realTableName}.{realSheetName}"]
     /// </summary>
     /// <param name="excelFilePaths"></param>
+    /// <param name="useTableModeSheets"></param>
     /// <returns></returns>
-    public static Dictionary<string, RenderedSheet> RenderExcelSheets(IEnumerable<string> excelFilePaths)
+    public static Dictionary<string, RenderedSheet> RenderExcelSheets(IEnumerable<string> excelFilePaths, IEnumerable<string> useTableModeSheets = null)
     {
       var renderedSheets = new RenderedSheetDictionary();
       foreach (var tablePath in excelFilePaths)
       {
         var tableName = Path.GetFileNameWithoutExtension(tablePath);
+        logger.InfoFormat("正在提取表格：{0}（{1}）", tableName, tablePath);
         UseSpreadsheetLight(tablePath, (sl, sheetName) => {
-          var tableMode = sheetName[0] == '!'; // tableMode: from (1,1) to (max,max)
+          var useTableMode = useTableModeSheets != null && useTableModeSheets.Contains(sheetName);
 
           sl.SelectWorksheet(sheetName);
           var cells = sl.GetCells(); // cells[Y][X] | cells[ID][Property]
-          var rowCount = cells.Count;
-          int colCount;
+          int rowCount;
           try
           {
-            colCount = cells[1].Count;
+            rowCount = cells.Keys.Max();
           }
-          catch (KeyNotFoundException ex)
+          catch
           {
-            colCount = 0;
+            rowCount = 0;
           }
 
           var unrenderedSheet = new Dictionary<string, RenderedRow>();
 
-          if (!tableMode)
+          // 正常的数据表模式（每行一条的数据）
+          if (!useTableMode)
           {
-            for (int rowIndex = 2; rowIndex <= rowCount; rowIndex++) // SpreadsheetLight rowIndex start with 1, here we start at 2 for skip caption row.
+            // SpreadsheetLight的rowIndex从1开始，这里设置为2，从而跳过标题行
+            const int firstRowValueIndex = 2;
+            for (int rowIndex = firstRowValueIndex; rowIndex <= rowCount; rowIndex++)
             {
               var id = sl.GetCellValueAsString(rowIndex, 1);
               if (id == "") continue;
@@ -54,7 +61,11 @@ namespace Lazy.Utility.DataPreprocessor
               }
 
               var row = new RenderedRow();
-              for (int colIndex = 1; colIndex <= colCount; colIndex++) // SpreadsheetLight colIndex start with 1
+              var colCount = cells[rowIndex].Count;
+
+              // SpreadsheetLight colIndex start with 1
+              const int firstColValueIndex = 1;
+              for (int colIndex = firstColValueIndex; colIndex <= colCount; colIndex++)
               {
                 var cellCaption = sl.GetCellValueAsString(1, colIndex);
                 var cellValue = sl.GetCellValueAsString(rowIndex, colIndex);
@@ -69,7 +80,7 @@ namespace Lazy.Utility.DataPreprocessor
                 }
                 catch (ArgumentException ex)
                 {
-                  Console.WriteLine($"读取普通表格（{tableName} - {sheetName}）时发现异常：{ex.Message}");
+                  Console.WriteLine($"提取数据表（{tableName} - {sheetName}）时发现异常：{ex.Message}");
                   Console.ReadKey();
                   throw;
                 }
@@ -77,10 +88,15 @@ namespace Lazy.Utility.DataPreprocessor
               unrenderedSheet.Add(id, row);
             }
           }
+          // 源表格模式（从(1,1)到(max,max)），通常用于特殊编译的规则
           else
           {
-            for (int rowIndex = 1; rowIndex <= rowCount; rowIndex++) // SpreadsheetLight rowIndex start with 1, here we start at 1 for capture all row.
+            foreach (KeyValuePair<int,Dictionary<int,SLCell>> pair in cells)
             {
+              var rowIndex = pair.Key;
+              var colValues = pair.Value;
+              var colCount = colValues.Keys.Max();
+
               var row = new RenderedRow();
               for (int colIndex = 1; colIndex <= colCount; colIndex++) // SpreadsheetLight colIndex start with 1
               {
@@ -97,6 +113,8 @@ namespace Lazy.Utility.DataPreprocessor
           }
           renderedSheets.AddRenderedSheet(new RenderedSheet(tableName, sheetName, unrenderedSheet));
         });
+        logger.InfoFormat("结束提取表格：{0}（{1}）", tableName, tablePath);
+        // TODO 低优先,不急 优化ExcelUtility的效率
       }
       return renderedSheets;
     }

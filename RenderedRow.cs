@@ -24,6 +24,6 @@ namespace Lazy.Utility.DataPreprocessor
       set => _dic[key] = value;
     }
 
-    public RenderedCell this[int index] => _list[index];
+    public RenderedCell this[int index] => _list.Count > index ? _list[index] : default;
   }
 }

@@ -14,13 +14,14 @@ namespace Lazy.Utility.DataPreprocessor
   /// </summary>
   public abstract class ExcelDataPreprocessor
   {
+    protected abstract IEnumerable<string> GetUseTableModeSheets();
     protected abstract void Compile();
     protected abstract void Output();
 
     private string configPath = "config.xml";
     protected Config config;
     protected Dictionary<string, RenderedSheet> renderedSheets;
-    protected static readonly ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+    public static readonly ILog logger = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
     protected string[] itemSeparators = {"\n", "、"};
 
     private string _workingTable;
@@ -79,7 +80,7 @@ namespace Lazy.Utility.DataPreprocessor
     {
       try
       {
-        renderedSheets = ExcelUtility.RenderExcelSheets(config.sheets.Values);
+        renderedSheets = ExcelUtility.RenderExcelSheets(config.sheets.Values, GetUseTableModeSheets());
       }
       catch (FileNotFoundException e)
       {
@@ -135,11 +136,15 @@ namespace Lazy.Utility.DataPreprocessor
     {
       if (!string.IsNullOrEmpty(value)) return;
       if (hint == null)
-//        logger.Warn($"检测到空【{caption}】，忘了填写数据？ {new System.Diagnostics.StackTrace()}");
+      {
         logger.Warn($"{_workingTable}:{_workingSheet} - 检测到空【{caption}】，忘了填写数据？");
+      }
       else
+      {
         logger.Warn($"{_workingTable}:{_workingSheet} - 检测到空【{caption}】（{hint}），忘了填写数据？");
+      }
       Console.ReadKey();
+      throw new NotSupportedException();
     }
 
     protected void ValidGroupData(string name, string name2, string[] valueGroup, string[] valueGroup2)
@@ -177,7 +182,7 @@ namespace Lazy.Utility.DataPreprocessor
     /// <param name="dataset"></param>
     /// <param name="pushEmpty">rpg maker mv need first cell as empty.</param>
     /// <typeparam name="T"></typeparam>
-    protected void OutputJsonArr<T>(string jsonFileName, ICollection<KeyValuePair<int, T>> dataset, bool pushEmpty)
+    protected void OutputJsonArr<T>(string jsonFileName, ICollection<KeyValuePair<int, T>> dataset, bool pushEmpty = false)
     {
       var list = pushEmpty ? new List<T> {default} : new List<T>();
       foreach (var data in dataset) list.Add(data.Value);
@@ -186,11 +191,16 @@ namespace Lazy.Utility.DataPreprocessor
       logger.Info($"已成功输出：{jsonFileName}。");
     }
 
-    protected void OutputJsonDic<T>(string jsonFileName, ICollection<KeyValuePair<string, T>> dataset)
+    protected void OutputJsonDic<TKey, TValue>(string jsonFileName, ICollection<KeyValuePair<TKey, TValue>> dataset)
     {
       var output = JsonConvert.SerializeObject(dataset, Formatting.Indented);
       File.WriteAllText(GetJsonOutputPath(jsonFileName), output);
       logger.Info($"已成功输出：{jsonFileName}。");
+    }
+
+    protected void OutputSLK(string slkFileName, List<Dictionary<string, string>> dataset)
+    {
+      // TODO
     }
 
     private string GetJsonOutputPath(string jsonFileName)
