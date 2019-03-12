@@ -29,7 +29,7 @@ namespace Lazy.Utility.DataPreprocessor
 
     public void Execute()
     {
-      logger.Info("开始转表，肝肝肝肝肝肝!");
+      logger.Info("转表开始。");
       _RegisterAllExceptionCatcher();
       logger.Info("正在读取设置。");
       _LoadConfig();
@@ -39,8 +39,8 @@ namespace Lazy.Utility.DataPreprocessor
       Compile();
       logger.Info("正在输出Json。");
       Output();
-      logger.Info("全部搞定了！收工领盒饭！");
-      Console.ReadKey();
+      logger.Info("转表已完成。");
+      // Console.ReadKey();
     }
 
     private void _RegisterAllExceptionCatcher()
